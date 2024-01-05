@@ -1,6 +1,5 @@
-from singleton import *
-from time import sleep
 from requests.adapters import HTTPAdapter
+from singleton import *
 import requests
 import json
 
