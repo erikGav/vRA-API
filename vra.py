@@ -320,7 +320,6 @@ class Project:
 
         return projects
 
-
 class Virtualmachine(Resource):
     _actions = [
         "Cloud.vSphere.Machine.Add.Disk",
