@@ -1,9 +1,17 @@
-from requests.adapters import HTTPAdapter
 from singleton import *
+from requests.adapters import HTTPAdapter
 import requests
 import json
 
 requests.packages.urllib3.disable_warnings()
+
+EXISTING_RESOURCE_TYPES = [
+    'Cloud.NSX.Network',
+    'Cloud.vSphere.Disk',
+    'Cloud.SecurityGroup',
+    'Cloud.vSphere.Machine',
+    'Cloud.vSphere.Network'
+]
 
 class Vra(metaclass=Singleton):
     base_url = None
@@ -161,10 +169,10 @@ class Deployment:
             else:
                 return Resource(
                     id=resource['id'],
-                    name=resource['properties']['resourceName'],
+                    name=resource['properties']['resourceName'] if resource['type'] in EXISTING_RESOURCE_TYPES else None,
                     type=resource['type'],
                     origin=resource['origin'],
-                    syncStatus=resource['syncStatus'],
+                    syncStatus=resource['syncStatus'] if 'syncStatus' in resource.keys() else None,
                     deploymentId=self.id,
                     resourceLink=resource['properties']['resourceLink']
                 )
@@ -237,10 +245,10 @@ class Resource:
         return f"Running: \n\tAction: [{action_res['name']}]\n\tResource: [{self.name}]\n\tType: [{self.type}]"
 
     @staticmethod
-    def get_all(resourceTypes=None):
+    def get_all(resourceTypes=None, syncStatus=None):
         resource_res = Vra().send_request(
             url='/deployment/api/resources',
-            params={"size": "200", "resourceTypes": resourceTypes}
+            params={"size": "200", "resourceTypes": resourceTypes, "syncStatus": syncStatus}
         )
         def map_resources(resource):
             if (resource['type'] == 'Cloud.vSphere.Machine'):
@@ -249,19 +257,19 @@ class Resource:
                     name=resource['properties']['resourceName'],
                     type=resource['type'],
                     origin=resource['origin'],
-                    syncStatus=resource['syncStatus'],
-                    deploymentId=resource['deploymentId'] if 'deploymentId' in resource.keys() else None,
+                    syncStatus=resource['syncStatus'], #if 'syncStatus' in resource.keys() else None,
+                    deploymentId=resource['deploymentId'], # if 'deploymentId' in resource.keys() else None,
                     endpointId=resource['properties']['endpointId'],
                     resourceLink=resource['properties']['id'],
                 )
             else:
                 return Resource(
                     id=resource['id'],
-                    name=resource['properties']['resourceName'],
+                    name=resource['properties']['resourceName'] if resource['type'] in EXISTING_RESOURCE_TYPES else None,
                     type=resource['type'],
                     origin=resource['origin'],
-                    syncStatus=resource['syncStatus'],
-                    deploymentId=resource['deploymentId'] if 'deploymentId' in resource.keys() else None,
+                    syncStatus=resource['syncStatus'] if syncStatus else None,
+                    deploymentId=resource['deploymentId'], #if 'deploymentId' in resource.keys() else None,
                     resourceLink=resource['properties']['id']
                 )
 
@@ -319,6 +327,7 @@ class Project:
         projects = list(map(map_project, project_res))
 
         return projects
+
 
 class Virtualmachine(Resource):
     _actions = [

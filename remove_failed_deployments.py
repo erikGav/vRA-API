@@ -1,7 +1,6 @@
 from vra import *
 from env import *
 import os
-import json
 
 deployment_status = [
     'CREATE_SUCCESSFUL',
